@@ -1,0 +1,443 @@
+/* Basic Reset & Body Layout */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #e0e5ec;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+h1 {
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #333;
+}
+
+/* Main Container */
+.container {
+  background: #e0e5ec;
+  border-radius: 20px;
+  padding: 20px 20px 40px;
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 20px 20px 60px rgba(0,0,0,0.1),
+              -20px -20px 60px rgba(255,255,255,0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Neumorphic Button */
+.neumorphic-button {
+  background: linear-gradient(145deg, #f53b57, #d32f2f);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.15),
+              -6px -6px 12px rgba(255,255,255,0.9);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.neumorphic-button:hover {
+  transform: scale(1.03);
+  box-shadow: 8px 8px 16px rgba(0,0,0,0.2),
+              -8px -8px 16px rgba(255,255,255,0.95);
+}
+
+/* Settings Button (Gear Icon) */
+.settings-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #e0e5ec;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.15),
+              -6px -6px 12px rgba(255,255,255,0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+.settings-btn:hover { transform: scale(1.05); }
+.settings-btn svg { width: 24px; height: 24px; fill: #555; }
+
+/* Player Count Control */
+.player-control {
+  display: flex;
+  align-items: center;
+  background: #e0e5ec;
+  border-radius: 30px;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.15),
+              -6px -6px 12px rgba(255,255,255,0.9);
+  margin-bottom: 20px;
+}
+.player-control button {
+  background: #e0e5ec;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  line-height: 40px;
+  color: #555;
+  cursor: pointer;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.15),
+              -6px -6px 12px rgba(255,255,255,0.9);
+  transition: transform 0.2s ease;
+  margin: 5px;
+}
+.player-control button:hover { transform: scale(1.05); }
+.player-control input {
+  width: 50px;
+  font-size: 1.5rem;
+  text-align: center;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #333;
+}
+
+/* Wheel Container (Draggable) */
+.wheel-container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  margin: 20px 0;
+  border-radius: 50%;
+  background: #e0e5ec;
+  box-shadow: inset 8px 8px 16px rgba(0,0,0,0.1),
+              inset -8px -8px 16px rgba(255,255,255,0.7);
+  mix-blend-mode: multiply;
+  cursor: grab;
+}
+.wheel-container:active { cursor: grabbing; }
+#wheelCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+}
+
+/* Main Needle Styles */
+.needle { position: absolute; z-index: 10; }
+.needle.knob {
+  width: 70px;
+  height: 70px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: 50% 50%;
+  background: linear-gradient(145deg, #f0f3f7, #c8ced4);
+  border-radius: 50%;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.15),
+              -4px -4px 8px rgba(255,255,255,0.8);
+}
+.needle.knob::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid #f53b57;
+}
+.needle.arrow {
+  width: 4px;
+  height: 150px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -100%) rotate(0deg);
+  transform-origin: bottom center;
+  background: #f53b57;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2),
+              -2px -2px 6px rgba(255,255,255,0.9);
+}
+.needle.feather {
+  width: 4px;
+  height: 150px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -100%) rotate(0deg);
+  transform-origin: bottom center;
+  background: #34a853;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2),
+              -2px -2px 6px rgba(255,255,255,0.9);
+}
+.needle.feather::after {
+  content: '';
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 32px;
+  background: radial-gradient(circle at 12px 0, #68d391 40%, #34a853 95%);
+  border-radius: 50% 50% 0 0;
+  box-shadow: inset 1px 1px 4px rgba(0,0,0,0.2);
+}
+.needle.laser {
+  width: 4px;
+  height: 150px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -100%) rotate(0deg);
+  transform-origin: bottom center;
+  background: linear-gradient(180deg, #ff007f, #c8005c);
+  box-shadow: 0 0 10px 3px rgba(255,0,127,0.7);
+}
+.needle.laser::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff007f, #c8005c);
+  box-shadow: 0 0 8px 2px rgba(255,0,127,0.5);
+}
+.needle.trident {
+  width: 6px;
+  height: 130px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -95%) rotate(0deg);
+  transform-origin: bottom center;
+  background: #4b4b4b;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2),
+              -2px -2px 6px rgba(255,255,255,0.9);
+}
+.needle.trident::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 20px;
+  background: #4b4b4b;
+}
+.needle.trident::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent 0%, transparent 40%, #4b4b4b 40%, #4b4b4b 60%, transparent 60%, transparent 100%);
+}
+
+/* Needle Preview Styles for Modal */
+.needle-preview {
+  display: inline-block;
+  position: relative;
+}
+.needle-preview.knob {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(145deg, #f0f3f7, #c8ced4);
+  border-radius: 50%;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.15),
+              -4px -4px 8px rgba(255,255,255,0.8);
+}
+.needle-preview.knob::before {
+  content: '';
+  display: block;
+  margin: 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 10px solid #f53b57;
+}
+.needle-preview.arrow {
+  width: 4px;
+  height: 40px;
+  background: #f53b57;
+  position: relative;
+  margin: 0 auto;
+}
+.needle-preview.arrow::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 10px solid #f53b57;
+}
+.needle-preview.feather {
+  width: 4px;
+  height: 40px;
+  background: #34a853;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2),
+              -2px -2px 6px rgba(255,255,255,0.9);
+  position: relative;
+  margin: 0 auto;
+}
+.needle-preview.feather::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 24px;
+  background: radial-gradient(circle at 9px 0, #68d391 40%, #34a853 95%);
+  border-radius: 50% 50% 0 0;
+  box-shadow: inset 1px 1px 4px rgba(0,0,0,0.2);
+}
+.needle-preview.laser {
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(180deg, #ff007f, #c8005c);
+  position: relative;
+  margin: 0 auto;
+}
+.needle-preview.laser::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff007f, #c8005c);
+  box-shadow: 0 0 4px 1px rgba(255,0,127,0.5);
+}
+.needle-preview.trident {
+  width: 6px;
+  height: 40px;
+  background: #4b4b4b;
+  position: relative;
+  margin: 0 auto;
+}
+.needle-preview.trident::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 12px;
+  background: #4b4b4b;
+}
+.needle-preview.trident::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 12px;
+  background: linear-gradient(to bottom, transparent 0%, transparent 40%, #4b4b4b 40%, #4b4b4b 60%, transparent 60%, transparent 100%);
+}
+
+/* Modal Settings Menu */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.5);
+}
+.modal-content {
+  background: #e0e5ec;
+  margin: 5% auto;
+  padding: 20px 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 10px 10px 30px rgba(0,0,0,0.2);
+}
+.modal-content h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+  color: #333;
+}
+.modal-content h3 {
+  margin: 1.5rem 0 1rem;
+  font-size: 1.1rem;
+  color: #444;
+  text-align: center;
+}
+
+/* Preview Grid */
+.preview-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+/* Neumorphic Scrollbar for Preview Grid */
+.preview-grid::-webkit-scrollbar {
+  height: 8px;
+}
+.preview-grid::-webkit-scrollbar-track {
+  background: #e0e5ec;
+  border-radius: 10px;
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.15),
+              inset -4px -4px 8px rgba(255,255,255,0.7);
+}
+.preview-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #f53b57, #d32f2f);
+  border-radius: 10px;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.15),
+              -2px -2px 6px rgba(255,255,255,0.9);
+}
+
+.preview-card {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 220px;
+  background: #e0e5ec;
+  border-radius: 15px;
+  box-shadow: 5px 5px 12px rgba(0,0,0,0.1),
+              -5px -5px 12px rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+.preview-card:hover { transform: scale(1.05); }
+.preview-card.selected { border: 2px solid #f53b57; }
+
+.preview-content {
+  width: 100%;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-card span {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 1rem;
+  color: #333;
+}

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Interactive Spinning Wheel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+        canvas:active {
+            cursor: grabbing;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        input[type=range] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 8px; background: #d1d5db;
+            border-radius: 9999px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 24px; height: 24px; background: #4f46e5;
+            cursor: pointer; border-radius: 9999px; border: 4px solid #f3f4f6;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 24px; height: 24px; background: #4f46e5;
+            cursor: pointer; border-radius: 9999px; border: 4px solid #f3f4f6;
+        }
+        .selection-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px #4f46e5;
+        }
+        .result-pop {
+            animation: pop-in 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md text-center">
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 text-indigo-600 dark:text-indigo-400">Spin the Wheel!</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Flick the needle or press SPIN.</p>
+
+        <div class="relative w-full aspect-square max-w-sm mx-auto">
+            <canvas id="wheelCanvas"></canvas>
+        </div>
+
+        <div class="flex items-center justify-center gap-4 my-6">
+            <button id="decreaseBtn" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full w-12 h-12 flex items-center justify-center text-2xl">-</button>
+            <span id="sectionsCount" class="text-2xl font-mono bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-inner">8</span>
+            <button id="increaseBtn" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full w-12 h-12 flex items-center justify-center text-2xl">+</button>
+        </div>
+
+        <div class="flex items-center justify-center gap-4">
+            <button id="spinBtn" class="btn flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg">SPIN</button>
+            <button id="settingsBtn" class="btn bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+        </div>
+        
+        <div id="result" class="mt-6 text-2xl font-semibold h-8"></div>
+        <div id="history" class="mt-4 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap justify-center gap-2"></div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Settings</h2>
+                <button id="closeModalBtn" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-3xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Mute All Sounds</label>
+                    <button id="muteBtn" class="btn p-2 rounded-full bg-gray-200 dark:bg-gray-700"></button>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Needle Friction</label>
+                    <input id="frictionSlider" type="range" min="970" max="999" class="w-full">
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</h3>
+                    <div id="themeSelector" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Needle Design</h3>
+                    <div id="needleSelector" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Edit Labels</h3>
+                    <div id="labelEditor" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const increaseBtn = document.getElementById('increaseBtn');
+        const decreaseBtn = document.getElementById('decreaseBtn');
+        const sectionsCountSpan = document.getElementById('sectionsCount');
+        const resultDiv = document.getElementById('result');
+        const historyDiv = document.getElementById('history');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const frictionSlider = document.getElementById('frictionSlider');
+        const labelEditor = document.getElementById('labelEditor');
+        const themeSelector = document.getElementById('themeSelector');
+        const needleSelector = document.getElementById('needleSelector');
+        const muteBtn = document.getElementById('muteBtn');
+
+        // --- State Variables ---
+        let sections = [];
+        let history = [];
+        let isSpinning = false;
+        let needleRotation = 0;
+        let spinVelocity = 0;
+        let friction = 0.995;
+        let winningSegment = -1;
+        
+        let isDragging = false;
+        let lastPointerAngle = 0;
+        let pointerVelocity = 0;
+        let lastPointerMoveTime = 0;
+        let lastTickSegment = -1;
+        let isMuted = false;
+
+        // --- Audio Context ---
+        let audioCtx;
+        
+        // --- Theming & Needles ---
+        const themes = {
+            'Vibrant': ["#6366F1", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"],
+            'Forest': ["#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac"],
+            'Ocean': ["#0c4a6e", "#0369a1", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"],
+            'Sunset': ["#f97316", "#fb923c", "#fdba74", "#fca5a5", "#f87171", "#ef4444"],
+            'Pastel': ["#fecdd3", "#e9d5ff", "#c7d2fe", "#bfdbfe", "#a7f3d0", "#fef08a"],
+            'Neon': ["#ec4899", "#d946ef", "#8b5cf6", "#3b82f6", "#22d3ee", "#65a30d"],
+            'Earthy': ["#ca8a04", "#65a30d", "#16a34a", "#a16207", "#4d7c0f", "#0f766e"],
+            'Monochrome': ["#1f2937", "#4b5563", "#6b7280", "#9ca3af", "#d1d5db", "#e5e7eb"]
+        };
+        let colors = themes['Vibrant'];
+        
+        const needles = {
+            'Classic': {
+                draw: (centerX, centerY, needleLength) => {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(needleRotation);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -7); ctx.lineTo(needleLength, 0); ctx.lineTo(0, 7);
+                    ctx.closePath();
+                    ctx.fillStyle = '#1f2937'; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5; ctx.fill();
+                    ctx.restore();
+                },
+                tick: () => { if (isMuted || !audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'square'; o.frequency.value = 800; g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.05); },
+                win: () => { if (isMuted || !audioCtx) return; [600, 800, 1000].forEach((freq, i) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = freq; g.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i * 0.1 + 0.2); o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime + i * 0.1); o.stop(audioCtx.currentTime + i * 0.1 + 0.2); }); }
+            },
+            'Pointer': {
+                draw: (centerX, centerY, needleLength) => {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(needleRotation);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0); ctx.lineTo(needleLength, 0);
+                    ctx.lineWidth = 4; ctx.strokeStyle = '#dc2626'; ctx.stroke();
+                    ctx.restore();
+                },
+                tick: () => { if (isMuted || !audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = 1200; g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.08); },
+                win: () => { if (isMuted || !audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'triangle'; o.frequency.value = 1500; g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.3); }
+            },
+            'Sci-Fi': {
+                draw: (centerX, centerY, needleLength) => {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(needleRotation);
+                    ctx.beginPath();
+                    ctx.moveTo(10, -5); ctx.lineTo(needleLength, 0); ctx.lineTo(10, 5);
+                    ctx.closePath();
+                    ctx.fillStyle = '#22d3ee'; ctx.strokeStyle = '#a5f3fc'; ctx.lineWidth = 2;
+                    ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 20; ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                },
+                tick: () => { if (isMuted || !audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(2000, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1); g.gain.setValueAtTime(0.05, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.1); },
+                win: () => { if (isMuted || !audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(100, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.5); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.5); }
+            }
+        };
+        let currentNeedle = needles['Classic'];
+
+        // --- Core Functions ---
+        function setupAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser");
+            }
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const size = Math.min(container.clientWidth, container.clientHeight);
+            canvas.width = size;
+            canvas.height = size;
+            drawFrame();
+        }
+
+        function drawSegment(key, startAngle, arc) {
+            ctx.beginPath();
+            ctx.save();
+            ctx.fillStyle = (key === winningSegment) ? "#FFFFFF" : colors[key % colors.length];
+            if (key === winningSegment) {
+                 ctx.shadowColor = 'black';
+                 ctx.shadowBlur = 15;
+            }
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2 - 5, startAngle, startAngle + arc);
+            ctx.lineTo(canvas.width / 2, canvas.height / 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawSegmentText(key, startAngle, arc) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const textRadius = canvas.width * 0.35;
+            const angle = startAngle + arc / 2;
+            
+            const x = centerX + textRadius * Math.cos(angle);
+            const y = centerY + textRadius * Math.sin(angle);
+
+            ctx.save();
+            ctx.fillStyle = (key === winningSegment) ? "#000000" : "#FFFFFF";
+            ctx.font = `bold ${Math.max(10, 24 - sections.length)}px Poppins`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            const label = sections[key]?.label || (key + 1);
+            ctx.fillText(label.substring(0, 12), x, y);
+            ctx.restore();
+        }
+
+        function drawWheel() {
+            const arc = (2 * Math.PI) / sections.length;
+            for (let i = 0; i < sections.length; i++) {
+                drawSegment(i, i * arc, arc);
+            }
+            for (let i = 0; i < sections.length; i++) {
+                drawSegmentText(i, i * arc, arc);
+            }
+        }
+        
+        function drawNeedle() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const needleLength = canvas.width * 0.4;
+            
+            currentNeedle.draw(centerX, centerY, needleLength);
+
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 12, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1f2937';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f3f4f6';
+            ctx.fill();
+        }
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawWheel();
+            drawNeedle();
+        }
+
+        function animate() {
+            if (!isSpinning && !isDragging && Math.abs(spinVelocity) < 0.001) {
+                spinVelocity = 0;
+                setTimeout(() => requestAnimationFrame(animate), 100);
+                return;
+            }
+            
+            if (isSpinning) {
+                spinVelocity *= friction;
+                if (Math.abs(spinVelocity) < 0.001) {
+                    isSpinning = false;
+                    spinVelocity = 0;
+                    enableControls();
+                    determineWinner();
+                }
+            } else if (!isDragging) {
+                spinVelocity *= friction;
+            }
+
+            needleRotation += spinVelocity;
+            
+            const arc = (2 * Math.PI) / sections.length;
+            const currentSegment = Math.floor(((needleRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)) / arc);
+            
+            if(isSpinning && currentSegment !== lastTickSegment) {
+                currentNeedle.tick();
+                lastTickSegment = currentSegment;
+            }
+
+            drawFrame();
+            requestAnimationFrame(animate);
+        }
+        
+        function determineWinner() {
+            if (winningSegment !== -1 || !isSpinning) return; // FIX: Check if it was actually spinning
+            const arc = (2 * Math.PI) / sections.length;
+            const finalAngle = (needleRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const winningIndex = Math.floor(finalAngle / arc);
+            
+            winningSegment = winningIndex;
+            const winnerLabel = sections[winningIndex]?.label;
+            resultDiv.innerHTML = `<span class="result-pop inline-block">Winner: ${winnerLabel}!</span>`;
+            currentNeedle.win();
+
+            history.unshift(winnerLabel);
+            if (history.length > 5) history.pop();
+            localStorage.setItem('spinningWheel_history', JSON.stringify(history));
+            renderHistory();
+            
+            drawFrame();
+        }
+
+        function renderHistory() {
+            historyDiv.innerHTML = history.map(item => `<span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${item}</span>`).join('');
+        }
+        
+        function disableControls() {
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            increaseBtn.disabled = true;
+            decreaseBtn.disabled = true;
+        }
+
+        function enableControls() {
+            spinBtn.disabled = false;
+            spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            spinBtn.innerText = "SPIN";
+            increaseBtn.disabled = false;
+            decreaseBtn.disabled = false;
+        }
+
+        function startSpin(velocity) {
+            if (isSpinning) return;
+            isSpinning = true;
+            disableControls();
+            spinBtn.innerText = "SPINNING...";
+            resultDiv.innerHTML = "";
+            winningSegment = -1;
+            spinVelocity = velocity;
+        }
+
+        function handlePointerDown(e) {
+            setupAudio();
+            if (isSpinning) return;
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            lastPointerAngle = Math.atan2(y - canvas.height / 2, x - canvas.width / 2);
+            pointerVelocity = 0;
+            spinVelocity = 0; 
+            resultDiv.innerHTML = "";
+            winningSegment = -1;
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging || isSpinning) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            const currentAngle = Math.atan2(y - canvas.height / 2, x - canvas.width / 2);
+            
+            let angleDifference = currentAngle - lastPointerAngle;
+            if (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
+            if (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
+
+            const now = Date.now();
+            const timeDelta = now - lastPointerMoveTime;
+            
+            if (timeDelta > 0) {
+                 pointerVelocity = angleDifference / timeDelta;
+            }
+            
+            needleRotation += angleDifference;
+            lastPointerAngle = currentAngle;
+            lastPointerMoveTime = now;
+            drawFrame();
+        }
+
+        function handlePointerUp() {
+            if (!isDragging || isSpinning) return;
+            isDragging = false;
+            startSpin(pointerVelocity * 20);
+        }
+
+        function updateSections(newSize) {
+            const oldSize = sections.length;
+            if (newSize > oldSize) {
+                for(let i = oldSize; i < newSize; i++) {
+                    sections.push({ label: `${i + 1}` });
+                }
+            } else {
+                sections.length = newSize;
+            }
+            sectionsCountSpan.textContent = newSize;
+            localStorage.setItem('spinningWheel_sections', JSON.stringify(sections));
+            winningSegment = -1;
+            resultDiv.innerHTML = "";
+            renderLabelEditor();
+            drawFrame();
+        }
+
+        increaseBtn.addEventListener('click', () => {
+            if (sections.length < 20 && !isSpinning) {
+                updateSections(sections.length + 1);
+            }
+        });
+
+        decreaseBtn.addEventListener('click', () => {
+            if (sections.length > 2 && !isSpinning) {
+                updateSections(sections.length - 1);
+            }
+        });
+
+        function openModal() { settingsModal.classList.remove('hidden'); }
+        function closeModal() { settingsModal.classList.add('hidden'); }
+
+        settingsBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeModal(); });
+
+        frictionSlider.addEventListener('input', (e) => {
+            const sliderValue = parseInt(e.target.max) - parseInt(e.target.value) + parseInt(e.target.min);
+            friction = sliderValue / 1000;
+            localStorage.setItem('spinningWheel_friction', friction);
+        });
+
+        function renderLabelEditor() {
+            labelEditor.innerHTML = '';
+            sections.forEach((section, index) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = section.label;
+                input.className = 'w-full bg-gray-200 dark:bg-gray-700 p-2 rounded';
+                input.placeholder = `Label for section ${index + 1}`;
+                input.addEventListener('input', (e) => {
+                    sections[index].label = e.target.value;
+                    localStorage.setItem('spinningWheel_sections', JSON.stringify(sections));
+                    drawFrame();
+                });
+                labelEditor.appendChild(input);
+            });
+        }
+        
+        function renderThemeSelector() {
+            Object.keys(themes).forEach(themeName => {
+                const btn = document.createElement('button');
+                btn.className = 'selection-btn w-10 h-10 rounded-full flex items-center justify-center transition-all';
+                btn.style.background = `linear-gradient(45deg, ${themes[themeName][0]}, ${themes[themeName][2] || themes[themeName][0]})`;
+                btn.dataset.theme = themeName;
+                themeSelector.appendChild(btn);
+                btn.addEventListener('click', () => {
+                    colors = themes[themeName];
+                    localStorage.setItem('spinningWheel_theme', themeName);
+                    document.querySelectorAll('#themeSelector .selection-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    drawFrame();
+                });
+            });
+        }
+        
+        function renderNeedleSelector() {
+            Object.keys(needles).forEach(needleName => {
+                const btn = document.createElement('button');
+                btn.className = 'selection-btn bg-gray-200 dark:bg-gray-700 p-2 rounded transition-all';
+                btn.textContent = needleName;
+                btn.dataset.needle = needleName;
+                needleSelector.appendChild(btn);
+                btn.addEventListener('click', () => {
+                    currentNeedle = needles[needleName];
+                    localStorage.setItem('spinningWheel_needle', needleName);
+                    document.querySelectorAll('#needleSelector .selection-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    drawFrame();
+                });
+            });
+        }
+        
+        function updateMuteButton() {
+             muteBtn.innerHTML = isMuted ? 
+                `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>` : 
+                `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+        }
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            localStorage.setItem('spinningWheel_isMuted', isMuted);
+            updateMuteButton();
+        });
+
+        function loadSettings() {
+            const savedSections = localStorage.getItem('spinningWheel_sections');
+            if (savedSections) {
+                sections = JSON.parse(savedSections);
+            } else {
+                for(let i=0; i<8; i++) sections.push({label: `${i+1}`});
+            }
+            sectionsCountSpan.textContent = sections.length;
+
+            const savedFriction = localStorage.getItem('spinningWheel_friction');
+            if (savedFriction) friction = parseFloat(savedFriction);
+            
+            const savedHistory = localStorage.getItem('spinningWheel_history');
+            if (savedHistory) history = JSON.parse(savedHistory);
+
+            const savedTheme = localStorage.getItem('spinningWheel_theme') || 'Vibrant';
+            colors = themes[savedTheme];
+            
+            const savedNeedle = localStorage.getItem('spinningWheel_needle') || 'Classic';
+            currentNeedle = needles[savedNeedle];
+            
+            const savedMuteState = localStorage.getItem('spinningWheel_isMuted');
+            isMuted = savedMuteState === 'true';
+
+            const sliderMax = parseInt(frictionSlider.max);
+            const sliderMin = parseInt(frictionSlider.min);
+            frictionSlider.value = sliderMax + sliderMin - (friction * 1000);
+            renderLabelEditor();
+            renderHistory();
+            updateMuteButton();
+            document.querySelector(`#themeSelector .selection-btn[data-theme="${savedTheme}"]`)?.classList.add('active');
+            document.querySelector(`#needleSelector .selection-btn[data-needle="${savedNeedle}"]`)?.classList.add('active');
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('touchstart', handlePointerDown);
+        canvas.addEventListener('touchmove', handlePointerMove);
+        canvas.addEventListener('touchend', handlePointerUp);
+        window.addEventListener('resize', resizeCanvas);
+        spinBtn.addEventListener('click', () => {
+            setupAudio();
+            startSpin(Math.random() * 0.3 + 0.2);
+        });
+
+        window.addEventListener('load', () => {
+            renderThemeSelector();
+            renderNeedleSelector();
+            loadSettings();
+            resizeCanvas();
+            animate();
+        });
+    </script>
+</body>
+</html>

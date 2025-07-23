@@ -340,7 +340,9 @@
         }
         
         function determineWinner() {
-            if (winningSegment !== -1 || !isSpinning) return; // FIX: Check if it was actually spinning
+            // FIX: This check ensures a winner is only declared if a spin has just concluded.
+            if (winningSegment !== -1) return;
+
             const arc = (2 * Math.PI) / sections.length;
             const finalAngle = (needleRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
             const winningIndex = Math.floor(finalAngle / arc);
